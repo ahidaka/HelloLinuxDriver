@@ -107,8 +107,7 @@ Linux ドライバー開発のための小さなサンプルとヒントです�
 実行例
 ```sh
 # insmod workq2.ko
-# echo 1000 > /sys/module/period/period/sleep
-# echo 5 > /sys/module/period/period/count
 # echo 1 > /sys/module/period/period/sw
+# cat /sys/module/workq/parameters/sw
 # dmesg
 ```
