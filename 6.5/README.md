@@ -1,4 +1,4 @@
-# Hello Linux Driver （Kernel 6.2 用）
+# Hello Linux Driver （Kernel 6.5 用）
 
 Linux ドライバー開発のための小さなサンプルとヒントです。
 
