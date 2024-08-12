@@ -1,101 +1,254 @@
 # Hello Linux Driver （Kernel 6.5 用）
 
-Linux ドライバー開発のための小さなサンプルとヒントです。
+Linux ドライバー開発入門用 sysfs パラメータ機能とスレッドスケジュール のサンプル
 
-## hello サブディレクトリ
+- sysfs パラメータ受け渡し機能は、専用UI（ユーザーインターフェース）を持たない Linux ドライバーにおいて、実質的なUIであり、ほとんどの Linux ドライバーが持つ基本的な機能です。
+- スレッドスケジュール機能は、カーネルモジュールを自由に使いこなすために重要なLinuxカーネルの基本機能です。
 
-単純なローダブルモジュールのドライバーと、デバッグ用パラメーター受け渡しのサンプルです。
+## hello ディレクトリ
 
-### hello.ko -- 単純ドライバー
+単純なローダブルモジュールのドライバーと、デバッグ用パラメーター受け渡しのサンプル
+- helllo.ko
+- hello_m.ko
+- params.ko
 
-起動時に渡された *debug* パラメーターの値を *printk* で表示します。
+### hello.ko - ハロードライバー
 
-実行例
+*debug* パラメータを持つ、最も単純なローダブルモジュール・ドライバー。
+
+#### カーネルモジュールの基本操作確認
+
+起動時または *sysfs* パラメータで渡された *debug* パラメーターの値を保持して、*printk* でカーネルログに表示します。
+さらに *sysfs* のパラメータ管理と *dmesg*, *syslog* ログ表示機能を確認します。
+
+#### 演習： ロードとパラメータ指定, sysfs
+
 ```sh
+# ls /sys/module/
+# modinfo hello.ko
 # insmod hello.ko debug=1
 # dmesg
+# ls /sys/module/
 ```
 
-### hello_m.ko (hello_mult.c, hello_extern.c) -- 複数ソース・ファイルのサンプル
-モジュールパラメーター */sys/module/hello_m/parameters/sw* の値の読み書きで動作します。
+#### 解説
 
-実行例
+- */sys/module/* の *sysfs* に *hello* モジュールのツリーが無いことを確認
+- *modinfo* コマンドで、モジュール情報を確認
+- *debug=1* オプション付きで *hello.ko* モジュールをロード
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+- */sys/module/* の *sysfs* に *hello* モジュールのツリーが作成されたことを確認
+
+*/sys* 以下のディレクトリツリーは **sysfs** と呼び、ドライバーとローダブルモジュールの管理とインターフェースを提供します。
+
+#### 演習： sysfs パラメータ指定とアンロード
+
 ```sh
-# insmod hello_m.ko
-# echo 1 > /sys/module/hello_m/parameters/sw
-# cat /sys/module/hello_m/parameters/sw
+# cat /sys/module/hello/parameters/debug
+# echo 2 > /sys/module/hello/parameters/debug
+# cat /sys/module/hello/parameters/debug
+# rmmod hello
+# ls /sys/module/
 # dmesg
+# less /var/log/syslog
 ```
 
-### params.ko -- モジュールパラメーター・サンプル
-次のパラメーターの利用事例を示します。
-* sw -- bool型 パラメーター
+#### 解説
 
-* debug -- int型 パラメーター、Read/Write時に個別ルーチン実行
+- */sys/module/hello* エントリーの作成と debug パラメータ値を確認
+- コマンド操作で *debug* パラメータ値 "2" を書き込み
+- 書き込んだ の */sys/module/hello* の *debug* パラメータ値の確証
+- *helllo* モジュールをアンロード
+- */sys/module/* に *hello* モジュールのツリーの削除を確認
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+- */var/log/syslog* カーネルログメッセージを確認
 
-* sheet -- string型 パラメーター
+<br/>
 
-* line -- string型 パラメーター、Read/Write時に個別ルーチン実行
+### hello_m.ko (hello_mult.c, hello_extern.c) -- 複数ソース・ファイルドライバー
 
-* tabsize -- int型 パラメーター、table 配列の有効要素数の受け渡し用
+複数ソースコードで構成する *hello_m.ko* モジュールのパラメーター */sys/module/hello_m/parameters/sw* の値の読み書きを実行するドライバー
 
-* table --  int 配列型 パラメーター
+#### 演習
 
-実行例
 ```sh
+# modinfo hello_m.ko
+# insmod hello_m.ko
+# cat /sys/module/hello_m/parameters/sw
+# echo 1 > /sys/module/hello_m/parameters/sw
+# dmesg
+# less /var/log/syslog
+```
+
+#### 解説
+
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *helllo_m.ko* モジュールをロード
+- */sys/module/hello_m* エントリーと *sw* パラメータ値を確認
+- */sys/module/hello_m* の *sw* パラメータに 1 を書き込み
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+- */var/log/syslog* カーネルログメッセージを確認
+
+<br/>
+
+### params.ko -- モジュールパラメーター・ドライバー
+
+次の様々な型のパラメーターと、コールバック(cb)パラメータのサンプル・ドライバー
+
+- *sw* -- bool型 パラメーター
+- *debug* -- int型 パラメーター、Read/Write時に個別コールバックルーチン実行
+- *sheet* -- string型 パラメーター
+- *line* -- string型 パラメーター、Read/Write時に個別コールバックルーチン実行
+- *tabsize* -- int型 パラメーター、table 配列の有効要素数の受け渡し用
+- *table* --  int 配列型 パラメーター
+
+#### 演習
+
+```sh
+# modinfo params.ko
 # insmod params.ko
+# more /sys/module/params/parameters/*
 # echo 1 > /sys/module/params/parameters/sw
 # cat /sys/module/params/parameters/sw
 # echo null > /sys/module/params/parameters/sw
 # cat /sys/module/params/parameters/sw
-# echo 1 > /sys/module/params/parameters/debug
+# echo 5 > /sys/module/params/parameters/debug
 # cat /sys/module/params/parameters/debug
 # echo "free string" > /sys/module/params/parameters/sheet
 # cat /sys/module/params/parameters/sheet
 # echo text > /sys/module/params/parameters/line
 # cat /sys/module/params/parameters/line
-# cat /sys/module/params/parameters/tabsize
 # cat /sys/module/params/parameters/table
 # echo 0,1,2,3 > /sys/module/params/parameters/table
 # cat /sys/module/params/parameters/tabsize
 # dmesg
+# less /var/log/syslog
 ```
 
-## schedule サブディレクトリ
+#### 解説
 
-カーネルスレッドと各種の遅延実行処理のサンプルです。詳細はソースコードを参照してください。
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *params.ko* モジュールをロード
+- 各パラメータ初期値を表示して確認
+- *sw* パラメータ（bool型）に 1 を書き込み
+- 書き込んだ *sw* パラメータ値を確認
+- *sw* パラメータ値に *null* を書き込み
+- 書き込んだ *sw* パラメータ値を確認
+- *debug* パラメータ（int型）に 5 を書き込み
+- 書き込んだ *debug* パラメータ値を確認
+- *sheet* パラメータ（string型）に "free string" を書き込み
+- 書き込んだ *sheet* パラメータ値を確認
+- *line* パラメータ（string型）に "free string" を書き込み
+- 書き込んだ *line* パラメータ値を確認
+- *tabsize*  パラメータ値を確認
+- *table*  パラメータに 0,1,2,3 を書き込み
+- *tabsize*  パラメータ値を確認
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+- */var/log/syslog* カーネルログメッセージを確認
+
+個別コールバックルーチンを呼び出しているので、ソースコード params.c の内容とデバッグメッセージで動作を確認します。
+
+<br/>
+
+## schedule ディレクトリ
+
+各種カーネルスレッドと遅延実行処理サンプル
+
+- period.ko
+- kthread.ko
+- tasklet.ko
+- workq.ko
+- workq2.ko
 
 ### period.ko -- schedule_timeout 遅延実行サンプル
-実行例
+
+ユーザーアプリケーション(echo)からの呼び出しで、カーネルモードでブロック（同期）実行する単純なドライバーモジュールのサンプル。内部でパラメータ時間ブロックスリープするため、終了するまで制御が戻りません。
+*sleep* パラメータは *jiffies* 値（通常ms）、*count* 回数分スリープします。
+
+#### 演習
+
 ```sh
+# modinfo period.ko 
 # insmod period.ko
+# more /sys/module/period/parameters/*
 # echo 500 > /sys/module/period/parameters/sleep
 # echo 5 > /sys/module/period/parameters/count
 # echo 1 > /sys/module/period/parameters/sw
 # dmesg
 ```
 
+#### 解説
+
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *period.ko* モジュールをロード
+- 各パラメータ初期値を表示して確認
+- *sleep* パラメータに 500 を書き込み
+- *count* パラメータに 5 を書き込み
+- *sw* パラメータに 1 を書き込んで実行開始
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+
+<br/>
+
 ### kthread.ko -- kthread (Kernel Thread) 実行サンプル
-実行例
+
+カーネルスレッドの基本動作である、kthread関数（kthread_run）のサンプルです。
+内部で schedule_timeout 関数呼び出しで、パラメータ時間スリープしますが非同期（ノンブロック）動作のため、制御がすぐに戻ります。
+*sleep* パラメータは *jiffies* 値（通常ms）、*count* 回数分スリープします。
+
+#### 演習
+
 ```sh
+# modinfo kthread.ko 
 # insmod kthread.ko
+# more /sys/module/kthread/parameters/*
 # echo 500 > /sys/module/kthread/parameters/sleep
 # echo 5 > /sys/module/kthread/parameters/count
 # echo 1 > /sys/module/kthread/parameters/sw
 # dmesg
 ```
+#### 解説
+
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *kthread.ko* モジュールをロード
+- 各パラメータ初期値を表示して確認
+- *sleep* パラメータに 500 を書き込み
+- *count* パラメータに 5 を書き込み
+- *sw* パラメータに 1 を書き込んで実行開始
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+
+<br/>
 
 ### tasklet.ko -- tasklet 実行サンプル
-実行例
+
+taskletは割り込みハンドラから遅延実行される非割り込みの処理のカーネルタスクです。
+このサンプルでは割り込み処理ハンドラから実行しない、書き方のだけのサンプルです。
+
+#### 演習
+
 ```sh
+# modinfo tasklet.ko
 # insmod tasklet.ko
+# more /sys/module/tasklet/parameters/*
 # echo 100000 > /sys/module/tasklet/parameters/sleep
 # echo 1 > /sys/module/tasklet/parameters/sw
 # dmesg
 ```
+#### 解説
+
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *tasklet.ko* モジュールをロード
+- 各パラメータ初期値を表示して確認
+- *sleep* パラメータに 100000 を書き込み
+- *sw* パラメータに 1 を書き込んで実行開始
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+
+<br/>
 
 ### workq.ko -- 汎用 Workqueue サンプル
-実行例
+
+
+#### 演習
+
 ```sh
 # insmod workq.ko
 # echo 1 > /sys/module/workq/parameters/sw
@@ -103,11 +256,20 @@ Linux ドライバー開発のための小さなサンプルとヒントです�
 # dmesg
 ```
 
+#### 解説
+
+<br/>
+
 ### workq2.ko -- カスタム Workqueue サンプル
-実行例
+
+#### 演習
+
 ```sh
 # insmod workq2.ko
 # echo 1 > /sys/module/period/period/sw
 # cat /sys/module/workq/parameters/sw
 # dmesg
 ```
+
+#### 解説
+
