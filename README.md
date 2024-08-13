@@ -220,8 +220,10 @@ Linux ドライバー開発入門用 sysfs パラメータ機能とスレッド�
 
 ### tasklet.ko -- tasklet 実行サンプル
 
-taskletは割り込みハンドラから遅延実行される非割り込みの処理のカーネルタスクです。
-このサンプルでは割り込み処理ハンドラから実行しない、書き方のだけのサンプルです。
+taskletは割り込みハンドラからソフトウェア割り込みで遅延実行されるカーネルタスクです。
+割り込みで動作するため、処理内容には制約があります。
+このサンプルは実際には割り込みハンドラから実行しないため、書き方のだけのサンプルです。
+*loop* パラメータは tasklet 1回処理毎の実行数、*count* は実行回数です。
 
 #### 演習
 
@@ -229,7 +231,7 @@ taskletは割り込みハンドラから遅延実行される非割り込みの�
 # modinfo tasklet.ko
 # insmod tasklet.ko
 # more /sys/module/tasklet/parameters/*
-# echo 100000 > /sys/module/tasklet/parameters/sleep
+# echo 20 > /sys/module/tasklet/parameters/count
 # echo 1 > /sys/module/tasklet/parameters/sw
 # dmesg
 ```
@@ -238,7 +240,7 @@ taskletは割り込みハンドラから遅延実行される非割り込みの�
 - *modinfo* コマンドで、モジュール情報を確認
 - オプション無しで *tasklet.ko* モジュールをロード
 - 各パラメータ初期値を表示して確認
-- *sleep* パラメータに 100000 を書き込み
+- *count* パラメータに 20 を書き込んで実行回数指定
 - *sw* パラメータに 1 を書き込んで実行開始
 - *dmesg* コマンドでカーネルメッセージ出力を確認
 
@@ -246,11 +248,15 @@ taskletは割り込みハンドラから遅延実行される非割り込みの�
 
 ### workq.ko -- 汎用 Workqueue サンプル
 
+workq は、割り込みハンドラから遅延実行されるカーネルタスクです。
+このサンプルではカーネルが用意した汎用workqueueを使用します。
 
 #### 演習
 
 ```sh
+# modinfo workq.ko
 # insmod workq.ko
+# more /sys/module/workq/parameters/*
 # echo 1 > /sys/module/workq/parameters/sw
 # cat /sys/module/workq/parameters/sw
 # dmesg
@@ -258,18 +264,36 @@ taskletは割り込みハンドラから遅延実行される非割り込みの�
 
 #### 解説
 
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *workq.ko* モジュールをロード
+- 各パラメータ初期値を表示して確認
+- *sw* パラメータに 1 を書き込んで実行開始
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+
 <br/>
 
 ### workq2.ko -- カスタム Workqueue サンプル
 
+workq は、割り込みハンドラから遅延実行されるカーネルタスクです。
+このサンプルでは個別に用意した専用のworkqueueを使用します。
+
 #### 演習
 
 ```sh
+# modinfo workq2.ko
 # insmod workq2.ko
-# echo 1 > /sys/module/period/period/sw
-# cat /sys/module/workq/parameters/sw
+# more /sys/module/workq2/parameters/*
+# echo 1 > /sys/module/workq2/period/sw
+# cat /sys/module/workq2/parameters/sw
 # dmesg
 ```
 
 #### 解説
 
+- *modinfo* コマンドで、モジュール情報を確認
+- オプション無しで *workq2.ko* モジュールをロード
+- 各パラメータ初期値を表示して確認
+- *sw* パラメータに 1 を書き込んで実行開始
+- *dmesg* コマンドでカーネルメッセージ出力を確認
+
+<br/>
