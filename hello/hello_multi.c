@@ -1,20 +1,23 @@
 #include <linux/module.h>
 
 static int sw = 0;
-extern int hello_extern(void);
+extern int hello_extern(int v);
 
 /*
  * called when user writes the parameter
  */
 static int hellom_set_sw(const char *val, const struct kernel_param *kp)
 {
-	int v = hello_extern();
+	int v;
 
-	if (val)
-		sw = simple_strtol(val, NULL, 0);
+	sw = simple_strtol(val, NULL, 0);
+	// get the counter or reset
+	v = hello_extern(sw);
+	
 	if (sw) {
-		printk("%s:set: val = %d, v = %d\n",
+		printk("%s:set: input val = %d, v = %d\n",
 		       kp->name, *((int *)kp->arg), v);
+		// set total value
 		sw += v;
 	}
 	return 0;
