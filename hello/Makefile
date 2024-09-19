@@ -4,8 +4,7 @@ EXTRA_CFLAGS := -DDEBUG=1
 #
 #if yocto for raspberrypi3
 #KDIR = /home/hidaka/rp3/build/rpi3/tmp/work/raspberrypi3-poky-linux-gnueabi/linux-raspberrypi/1_4.14.79+gitAUTOINC+9ca74c53cb-r0/linux-raspberrypi3-standard-build/
-
-KDIR = /lib/modules/`uname -r`/build
+#KDIR = /lib/modules/`uname -r`/build
 
 MODS = hello.ko hello_m.ko params.ko
 OBJS = hello.o  hello_m.o  params.o
